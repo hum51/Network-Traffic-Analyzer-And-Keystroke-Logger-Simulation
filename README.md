@@ -1,0 +1,2 @@
+# Network-Traffic-Analyzer-And-Keystroke-Logger-Simulation
+1. Monitor and analyze network packets using Python's built-in socket library on the local loopback interface. 2. The simulation leverages Python's pynput library to capture keystrokes typed within a dedicated test terminal window on a personal machine. All captured data is stored in a local log file only no data is transmitted externally. 
